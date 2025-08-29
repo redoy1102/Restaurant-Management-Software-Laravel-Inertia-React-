@@ -17,7 +17,7 @@ const ComponentHeader = ({ titleIcon, title, btnRoute, btnIcon, btnTitle }: Comp
                 {titleIcon}
                 {title}
             </h1>
-            <Button onClick={() => router.visit(`${btnRoute}`)} variant="default" className="flex items-center gap-2">
+            <Button onClick={() => router.visit(`${btnRoute}`)} variant="default" className="flex items-center gap-2 cursor-pointer">
                 {btnIcon}
                 {btnTitle}
             </Button>
