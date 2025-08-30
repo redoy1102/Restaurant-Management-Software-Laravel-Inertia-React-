@@ -14,10 +14,12 @@ return new class extends Migration
         Schema::create('orders', function (Blueprint $table) {
             $table->id();
             $table->foreignId('table_id')->constrained('tables');
-            $table->enum('status', ['pending', 'accepted', 'rejected']);
+            $table->string('customer_name')->nullable();
+            $table->string('customer_phone')->nullable();
+            $table->enum('status', ['pending', 'preparing', 'ready', 'served', 'cancelled'])->default('pending');
             $table->foreignId('chef_id')->nullable()->constrained('users');
             $table->integer('preparation_time')->nullable();
-            // $table->foreignId('invoice_id')->nullable()->constrained('invoices');
+            $table->decimal('total_amount', 10, 2);
             $table->text('notes')->nullable();
             $table->timestamps();
         });
