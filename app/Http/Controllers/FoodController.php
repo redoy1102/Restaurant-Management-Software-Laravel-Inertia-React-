@@ -9,6 +9,14 @@ use Illuminate\Support\Facades\Storage;
 
 class FoodController extends Controller
 {
+
+    public function index()
+    {
+        return Inertia::render('Foods/Index', [
+            'foods' => Food::all(),
+        ]);
+    }
+
     public function create()
     {
         return Inertia::render('Foods/Create');
