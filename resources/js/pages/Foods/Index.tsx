@@ -1,8 +1,16 @@
 import ComponentHeader from '@/components/componentHeader';
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/app-layout';
+import { BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/react';
 import { DollarSign, Edit, Image as ImageIcon, Plus, Trash2, Utensils } from 'lucide-react';
+
+const breadcrumbs: BreadcrumbItem[] = [
+    {
+        title: '/foods',
+        href: '/foods',
+    },
+];
 
 interface Food {
     id: number;
@@ -18,7 +26,7 @@ interface FoodsIndexProps {
 
 export default function FoodsIndex({ foods }: FoodsIndexProps) {
     return (
-        <AppLayout>
+        <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Foods" />
             <div className="flex flex-col gap-4 p-4">
                 <ComponentHeader

@@ -112,7 +112,7 @@ class OrderController extends Controller
     public function update(Request $request, Order $order)
     {
         $validated = $request->validate([
-            'status' => 'required|in:pending,preparing,ready,served,cancelled',
+            'status' => 'required|in:pending,preparing,ready,served,cancelled,completed',
             'preparation_time' => 'nullable|integer|min:1',
             'chef_id' => 'nullable|exists:users,id',
         ]);

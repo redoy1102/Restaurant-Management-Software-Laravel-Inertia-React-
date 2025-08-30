@@ -11,7 +11,7 @@ import { useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
-        title: 'Dashboard',
+        title: '/dashboard',
         href: dashboard().url,
     },
 ];
@@ -38,7 +38,7 @@ interface OrderItem {
 interface Order {
     id: number;
     table_id: number;
-    status: 'pending' | 'preparing' | 'ready' | 'served' | 'cancelled';
+    status: 'pending' | 'preparing' | 'ready' | 'served' | 'cancelled' | 'completed';
     preparation_time: number | null;
     total_amount: number;
     created_at: string;
@@ -63,11 +63,13 @@ export default function Dashboard() {
             case 'preparing':
                 return 'bg-blue-100 text-blue-800';
             case 'ready':
-                return 'bg-green-100 text-green-800';
+                return 'bg-purple-100 text-purple-800';
             case 'served':
                 return 'bg-gray-100 text-gray-800';
             case 'cancelled':
                 return 'bg-red-100 text-red-800';
+            case 'completed':
+                return 'bg-gree-100 text-green-800';
             default:
                 return 'bg-gray-100 text-gray-800';
         }
@@ -115,7 +117,7 @@ export default function Dashboard() {
                     <div className="text-sm text-gray-600">Total Orders: {orders.length}</div>
                 </div>
 
-                <div className="grid gap-4">
+                <div className="grid gap-10">
                     {orders.length === 0 ? (
                         <Card>
                             <CardContent className="p-6 text-center">
@@ -137,9 +139,9 @@ export default function Dashboard() {
                                     <p className="text-sm text-gray-600">Placed: {new Date(order.created_at).toLocaleString()}</p>
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="grid gap-4 md:grid-cols-2">
+                                    <div className="grid gap-8 md:grid-cols-2">
                                         {/* Order Items */}
-                                        <div>
+                                        <div className="rounded-lg border-1 border-slate-300 p-4">
                                             <h4 className="mb-2 font-medium">Items:</h4>
                                             <div className="space-y-2">
                                                 {order.order_items.map((item) => (
@@ -154,7 +156,7 @@ export default function Dashboard() {
                                         </div>
 
                                         {/* Order Management */}
-                                        <div className="space-y-4">
+                                        <div className="space-y-4 rounded-lg border-1 border-slate-700 p-4">
                                             {/* Preparation Time */}
                                             <div>
                                                 <label className="mb-1 block text-sm font-medium">Preparation Time (minutes)</label>
@@ -207,6 +209,7 @@ export default function Dashboard() {
                                                         <SelectItem value="ready">Ready</SelectItem>
                                                         <SelectItem value="served">Served</SelectItem>
                                                         <SelectItem value="cancelled">Cancelled</SelectItem>
+                                                        <SelectItem value="completed">Completed</SelectItem>
                                                     </SelectContent>
                                                 </Select>
                                             </div>

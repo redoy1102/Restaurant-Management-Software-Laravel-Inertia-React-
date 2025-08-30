@@ -24,19 +24,25 @@ interface CartItem {
     quantity: number;
 }
 
+interface Order {
+    id: number;
+    table_id: number;
+    status: 'pending' | 'preparing' | 'ready' | 'served' | 'cancelled' | 'completed';
+    created_at: string;
+    updated_at: string;
+}
+
 interface WelcomeProps {
     foods: Food[];
     tables: Table[];
+    orders: Order[];
 }
 
 export default function Welcome() {
-    const { foods, tables } = usePage<SharedData & WelcomeProps>().props;
+    const { foods, tables, orders } = usePage<SharedData & WelcomeProps>().props;
     const [cart, setCart] = useState<CartItem[]>([]);
 
-    const { data, setData, processing, reset, errors } = useForm({
-        table_id: '',
-        items: [] as Array<{ food_id: number; quantity: number }>,
-    });
+    orders.map(order => console.log(typeof order.table_id));
 
     const addToCart = (food: Food) => {
         setCart((prev) => {
@@ -56,6 +62,11 @@ export default function Welcome() {
         return cart.reduce((total, item) => total + item.food.price * item.quantity, 0);
     };
 
+    const { data, setData, processing, reset, errors } = useForm({
+        table_id: '',
+        items: [] as Array<{ food_id: number; quantity: number }>,
+    });
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -69,6 +80,11 @@ export default function Welcome() {
             return;
         }
 
+        if (orders.some(order => order.table_id === parseInt(data.table_id))) {
+            alert('Table is already occupied! Please select a different table.');
+            return;
+        }
+
         // Create the order data with current cart
         const formData = {
             table_id: data.table_id,
@@ -79,7 +95,7 @@ export default function Welcome() {
         };
 
         // Submit using router.post for better control
-        router.post('/orders', formData, {
+        router.post('/place-order', formData, {
             onSuccess: () => {
                 alert('Order placed successfully!');
                 setCart([]);

@@ -15,14 +15,15 @@ Route::get('/', function () {
     return Inertia::render('welcome', [
         'foods' => Food::all(),
         'tables' => Table::all(),
+        'orders' => Order::all(),
     ]);
 })->name('home');
 
 // Public API endpoint for placing orders (no auth required)
-Route::post('/api/orders', [OrderController::class, 'store'])->name('api.orders.store');
+// Route::post('/api/orders', [OrderController::class, 'store'])->name('api.orders.store');
 
 // Public route for placing orders via Inertia (no auth required)
-Route::post('/orders', [OrderController::class, 'store'])->name('orders.store.public');
+Route::post('/place-order', [OrderController::class, 'store'])->name('orders.store.public');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', function () {
