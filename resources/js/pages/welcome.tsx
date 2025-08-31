@@ -42,7 +42,7 @@ export default function Welcome() {
     const { foods, tables, orders } = usePage<SharedData & WelcomeProps>().props;
     const [cart, setCart] = useState<CartItem[]>([]);
 
-    orders.map(order => console.log(typeof order.table_id));
+    orders.map((order) => console.log(typeof order.table_id));
 
     const addToCart = (food: Food) => {
         setCart((prev) => {
@@ -80,8 +80,9 @@ export default function Welcome() {
             return;
         }
 
-        if (orders.some(order => order.table_id === parseInt(data.table_id))) {
+        if (orders.some((order) => order.table_id === parseInt(data.table_id) && order.status !== 'completed')) {
             alert('Table is already occupied! Please select a different table.');
+            console.log(orders.some((order) => order.table_id === parseInt(data.table_id)));
             return;
         }
 

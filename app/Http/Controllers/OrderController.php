@@ -6,6 +6,7 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Food;
 use App\Models\Table;
+use App\Models\CustomerSession;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\DB;
@@ -55,6 +56,15 @@ class OrderController extends Controller
                 ];
             }
 
+            // Create or get customer session
+            $customerSession = CustomerSession::create([
+                'session_token' => CustomerSession::generateToken(),
+                'table_id' => $validated['table_id'],
+                'customer_name' => $validated['customer_name'] ?? null,
+                'customer_phone' => $validated['customer_phone'] ?? null,
+                'expires_at' => now()->addHours(6), // Session expires in 6 hours
+            ]);
+
             // Create order
             $order = Order::create([
                 'table_id' => $validated['table_id'],
@@ -63,6 +73,7 @@ class OrderController extends Controller
                 'status' => 'pending',
                 'total_amount' => $totalAmount,
                 'notes' => $validated['notes'] ?? null,
+                'customer_session_id' => $customerSession->id,
             ]);
 
             // Create order items
@@ -75,14 +86,16 @@ class OrderController extends Controller
 
             // Check if this is an Inertia request or API request
             if ($request->header('X-Inertia')) {
-                // For Inertia requests, redirect back to the same page
-                return redirect()->back()->with('success', 'Order placed successfully!');
+                // For Inertia requests, redirect to customer dashboard
+                return redirect()->route('customer.dashboard', ['sessionToken' => $customerSession->session_token])
+                    ->with('success', 'Order placed successfully!');
             }
 
             return response()->json([
                 'success' => true,
                 'message' => 'Order placed successfully!',
                 'order_id' => $order->id,
+                'customer_dashboard_url' => route('customer.dashboard', ['sessionToken' => $customerSession->session_token]),
             ]);
         } catch (\Exception $e) {
             DB::rollback();
@@ -117,7 +130,20 @@ class OrderController extends Controller
             'chef_id' => 'nullable|exists:users,id',
         ]);
 
+        $oldStatus = $order->status;
         $order->update($validated);
+
+        // Generate invoice when order is marked as completed
+        if ($validated['status'] === 'completed' && $oldStatus !== 'completed') {
+            $invoice = InvoiceController::generateInvoiceForOrder($order);
+
+            // return response()->json([
+            //     'success' => true,
+            //     'message' => 'Order completed and invoice generated!',
+            //     'invoice_id' => $invoice->id,
+            //     'invoice_url' => route('invoice.show', $invoice->id),
+            // ]);
+        }
 
         // return response()->json([
         //     'success' => true,

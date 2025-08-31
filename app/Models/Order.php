@@ -14,7 +14,8 @@ class Order extends Model
         'customer_name',
         'customer_phone',
         'total_amount',
-        'notes'
+        'notes',
+        'customer_session_id'
     ];
 
     protected $casts = [
@@ -40,5 +41,10 @@ class Order extends Model
     public function invoice()
     {
         return $this->hasOne(Invoice::class);
+    }
+
+    public function customerSession()
+    {
+        return $this->belongsTo(CustomerSession::class);
     }
 }

@@ -10,6 +10,7 @@ use App\Http\Controllers\OrderController;
 use App\Http\Controllers\TableController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\OrderItemController;
+use App\Http\Controllers\CustomerDashboardController;
 
 Route::get('/', function () {
     return Inertia::render('welcome', [
@@ -24,6 +25,14 @@ Route::get('/', function () {
 
 // Public route for placing orders via Inertia (no auth required)
 Route::post('/place-order', [OrderController::class, 'store'])->name('orders.store.public');
+
+// Customer dashboard routes (no auth required)
+Route::get('/customer-dashboard/{sessionToken}', [CustomerDashboardController::class, 'show'])->name('customer.dashboard');
+Route::get('/customer-dashboard/{sessionToken}/refresh', [CustomerDashboardController::class, 'refresh'])->name('customer.dashboard.refresh');
+
+// Invoice routes (no auth required for customers)
+Route::get('/invoice/{invoice}', [InvoiceController::class, 'show'])->name('invoice.show');
+Route::get('/invoice/{invoice}/pdf', [InvoiceController::class, 'downloadPdf'])->name('invoice.pdf');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', function () {
