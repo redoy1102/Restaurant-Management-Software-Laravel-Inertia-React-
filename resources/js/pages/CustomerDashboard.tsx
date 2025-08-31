@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { type SharedData } from '@/types';
 import { Head, router, usePage } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 interface Food {
     id: number;
@@ -57,7 +58,17 @@ interface CustomerDashboardProps {
 export default function CustomerDashboard() {
     const { session, orders } = usePage<SharedData & CustomerDashboardProps>().props;
     const [currentOrders, setCurrentOrders] = useState<Order[]>(orders);
+    // timers: orderId -> remaining seconds
     const [timers, setTimers] = useState<Record<number, number>>({});
+    // startTimes: orderId -> timestamp (ms)
+    const [startTimes, setStartTimes] = useState<Record<number, number>>(() => {
+        try {
+            const stored = localStorage.getItem('orderStartTimes');
+            return stored ? JSON.parse(stored) : {};
+        } catch {
+            return {};
+        }
+    });
 
     const getStatusColor = (status: string) => {
         switch (status) {
@@ -84,33 +95,56 @@ export default function CustomerDashboard() {
         return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
     };
 
-    // Initialize timers for orders with preparation time
+    // Track last known preparation time for each order
+
     useEffect(() => {
-        const newTimers: Record<number, number> = {};
-
-        currentOrders.forEach((order) => {
-            if (order.preparation_time && order.status === 'preparing') {
-                newTimers[order.id] = order.preparation_time * 60; // Convert minutes to seconds
+        setTimers((prevTimers) => {
+            const updatedTimers: Record<number, number> = { ...prevTimers };
+            const updatedStartTimes: Record<number, number> = { ...startTimes };
+            currentOrders.forEach((order) => {
+                if (order.preparation_time && order.status === 'preparing') {
+                    const prepSeconds = order.preparation_time * 60;
+                    // If no start time, set it now
+                    if (!updatedStartTimes[order.id]) {
+                        updatedStartTimes[order.id] = Date.now();
+                    }
+                    // Calculate remaining time based on start time
+                    const elapsed = Math.floor((Date.now() - updatedStartTimes[order.id]) / 1000);
+                    const remaining = prepSeconds - elapsed;
+                    updatedTimers[order.id] = remaining > 0 ? remaining : 0;
+                } else {
+                    // Not preparing, clear timer and start time
+                    delete updatedTimers[order.id];
+                    delete updatedStartTimes[order.id];
+                }
+            });
+            setStartTimes(updatedStartTimes);
+            // Persist startTimes to localStorage
+            try {
+                localStorage.setItem('orderStartTimes', JSON.stringify(updatedStartTimes));
+            } catch(error){
+                toast.error('Something went wrong with times.');
+                console.log("Error from timer:", error);
             }
+            return updatedTimers;
         });
-
-        setTimers(newTimers);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [currentOrders]);
 
     // Countdown timer effect
     useEffect(() => {
         const interval = setInterval(() => {
             setTimers((prev) => {
-                const updated = { ...prev };
+                const updated: Record<number, number> = { ...prev };
                 Object.keys(updated).forEach((orderId) => {
-                    if (updated[parseInt(orderId)] > 0) {
-                        updated[parseInt(orderId)] -= 1;
+                    const id = parseInt(orderId);
+                    if (updated[id] > 0) {
+                        updated[id] -= 1;
                     }
                 });
                 return updated;
             });
         }, 1000);
-
         return () => clearInterval(interval);
     }, []);
 
@@ -125,7 +159,7 @@ export default function CustomerDashboard() {
                     }
                 })
                 .catch((error) => console.error('Error refreshing orders:', error));
-        }, 5000); // Refresh every 5 seconds
+        }, 2000); // Refresh every 5 seconds
 
         return () => clearInterval(refreshInterval);
     }, [session.session_token]);
@@ -229,7 +263,7 @@ export default function CustomerDashboard() {
 
                                                     {order.status === 'completed' && order.invoice && (
                                                         <div className="mt-4 space-y-2">
-                                                            <p className="text-sm font-medium text-green-600 ">Order completed!</p>
+                                                            <p className="text-sm font-medium text-green-600">Order completed!</p>
                                                             <Button onClick={() => router.get(`/invoice/${order.invoice?.id}`)} className="w-full">
                                                                 View Invoice
                                                             </Button>

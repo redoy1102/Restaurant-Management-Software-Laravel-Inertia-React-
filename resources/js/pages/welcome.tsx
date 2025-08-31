@@ -1,3 +1,4 @@
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 // import { Input } from '@/components/ui/input';
@@ -5,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { type SharedData } from '@/types';
 import { Head, router, useForm, usePage } from '@inertiajs/react';
 import { useState } from 'react';
+import { Toaster, toast } from 'sonner';
 
 interface Food {
     id: number;
@@ -40,6 +42,8 @@ interface WelcomeProps {
 
 export default function Welcome() {
     const { foods, tables, orders } = usePage<SharedData & WelcomeProps>().props;
+    console.log('Tables: ', tables);
+    console.log('Orders:', orders);
     const [cart, setCart] = useState<CartItem[]>([]);
 
     orders.map((order) => console.log(typeof order.table_id));
@@ -71,17 +75,17 @@ export default function Welcome() {
         e.preventDefault();
 
         if (!data.table_id) {
-            alert('Please select a table');
+            toast.error('Please select a table');
             return;
         }
 
         if (cart.length === 0) {
-            alert('Please add items to cart');
+            toast.error('Please add items to cart');
             return;
         }
 
-        if (orders.some((order) => order.table_id === parseInt(data.table_id) && order.status !== 'completed')) {
-            alert('Table is already occupied! Please select a different table.');
+        if (orders.some((order) => order.table_id === parseInt(data.table_id) && order.status !== 'completed' && order.status !== 'cancelled')) {
+            toast.info('Table is already occupied! Please select a different table.');
             console.log(orders.some((order) => order.table_id === parseInt(data.table_id)));
             return;
         }
@@ -98,20 +102,21 @@ export default function Welcome() {
         // Submit using router.post for better control
         router.post('/place-order', formData, {
             onSuccess: () => {
-                alert('Order placed successfully!');
+                toast.success('Order placed successfully!');
                 setCart([]);
                 reset();
             },
             onError: (errors: Record<string, string>) => {
                 console.log('Order submission errors:', errors);
                 const errorMessage = Object.values(errors).join(', ') || 'Failed to place order';
-                alert(`Error: ${errorMessage}`);
+                toast.error(`Error: ${errorMessage}`);
             },
         });
     };
 
     return (
         <>
+            <Toaster richColors position="top-right" />
             <Head title="Food Ordering - Jolshiri Restaurant" />
 
             <div className="min-h-screen bg-gray-50 p-4">
@@ -126,12 +131,18 @@ export default function Welcome() {
                                 {foods.map((food) => (
                                     <Card key={food.id} className="p-4">
                                         <div className="flex items-center justify-between">
-                                            <div>
-                                                <h3 className="font-medium">{food.name}</h3>
-                                                <p className="text-sm text-gray-600">{food.description}</p>
-                                                <p className="text-lg font-bold">${food.price}</p>
+                                            <div className='flex gap-4 items-center'>
+                                                <Avatar>
+                                                    <AvatarImage src={`/storage/${food.image}`} alt="Food" className='w-12 h-12 rounded-md' />
+                                                    <AvatarFallback>{food.name.charAt(0)}</AvatarFallback>
+                                                </Avatar>
+                                                <div>
+                                                    <h3 className="font-medium">{food.name}</h3>
+                                                    <p className="text-sm text-gray-600">{food.description}</p>
+                                                    <p className="text-lg font-bold">${food.price}</p>
+                                                </div>
                                             </div>
-                                            <Button onClick={() => addToCart(food)} size="sm">
+                                            <Button onClick={() => addToCart(food)} size="sm" className='cursor-pointer'>
                                                 Add
                                             </Button>
                                         </div>
@@ -155,11 +166,20 @@ export default function Welcome() {
                                                     <SelectValue placeholder="Choose a table" />
                                                 </SelectTrigger>
                                                 <SelectContent>
-                                                    {tables.map((table) => (
-                                                        <SelectItem key={table.id} value={table.id.toString()}>
-                                                            {table.name}
-                                                        </SelectItem>
-                                                    ))}
+                                                    {tables.map((table) => {
+                                                        const isOccupied = orders.some(
+                                                            (order) =>
+                                                                order.table_id === table.id &&
+                                                                order.status !== 'completed' &&
+                                                                order.status !== 'cancelled',
+                                                        );
+                                                        return (
+                                                            <SelectItem key={table.id} value={table.id.toString()} disabled={isOccupied}>
+                                                                {table.name}
+                                                                {isOccupied && ' (Booked)'}
+                                                            </SelectItem>
+                                                        );
+                                                    })}
                                                 </SelectContent>
                                             </Select>
                                             {errors.table_id && <span className="text-sm text-red-500">{errors.table_id}</span>}
@@ -182,7 +202,7 @@ export default function Welcome() {
                                                             ${item.food.price} x {item.quantity}
                                                         </span>
                                                     </div>
-                                                    <Button onClick={() => removeFromCart(item.food.id)} size="sm" className="cursor-pointer">
+                                                    <Button onClick={() => removeFromCart(item.food.id)} size="sm" className="cursor-pointer border-1 border-red-500 text-red-500 bg-white hover:bg-red-500 hover:text-white">
                                                         Remove
                                                     </Button>
                                                 </div>
@@ -197,7 +217,7 @@ export default function Welcome() {
                                 </Card>
 
                                 {/* Place Order Button */}
-                                <Button type="submit" disabled={cart.length === 0 || !data.table_id || processing} className="w-full" size="lg">
+                                <Button type="submit" disabled={cart.length === 0 || !data.table_id || processing} className="w-full cursor-pointer" size="lg">
                                     {processing ? 'Placing Order...' : `Place Order - $${getTotal().toFixed(2)}`}
                                 </Button>
                             </form>

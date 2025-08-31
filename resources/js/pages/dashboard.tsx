@@ -50,8 +50,24 @@ interface DashboardProps {
     orders: Order[];
 }
 
+// interface Invoice {
+//     id: number;
+//     order_id: number;
+//     table_id: number;
+//     invoice_number: string;
+//     subtotal: number;
+//     tax_amount: number;
+//     discount_amount: number;
+//     total_amount: number;
+//     preparation_time: number;
+//     status: 'paid' | 'unpaid';
+//     issued_at: string;
+//     order: Order;
+//     table: Table;
+// }
+
 export default function Dashboard() {
-    const { orders } = usePage<SharedData & DashboardProps>().props;
+    const { orders, invoices } = usePage<SharedData & DashboardProps>().props;
     const [editingOrder, setEditingOrder] = useState<number | null>(null);
     const [preparationTime, setPreparationTime] = useState<string>('');
     const [processing, setProcessing] = useState<boolean>(false);
@@ -152,6 +168,7 @@ export default function Dashboard() {
                                                     </div>
                                                 ))}
                                                 <div className="border-t pt-2 font-medium">Total: ${order.total_amount}</div>
+                                                
                                             </div>
                                         </div>
 

@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { type SharedData } from '@/types';
 import { Head, router, usePage } from '@inertiajs/react';
+import { ChevronLeftIcon, FileDown, PrinterCheckIcon } from 'lucide-react';
 
 interface Food {
     id: number;
@@ -68,7 +69,7 @@ export default function Invoice() {
     };
 
     const handleBackToDashboard = () => {
-        router.get('/dashboard');
+        router.get('/');
     };
 
     return (
@@ -81,13 +82,18 @@ export default function Invoice() {
                     <div className="mb-6 flex items-center justify-between print:hidden">
                         <h1 className="text-2xl font-bold">Invoice Details</h1>
                         <div className="flex gap-2">
-                            <Button onClick={handleBackToDashboard} variant="outline">
-                                Back to Dashboard
+                            <Button onClick={handleBackToDashboard} variant="secondary" className="cursor-pointer">
+                                <ChevronLeftIcon />
+                                Back to Order
                             </Button>
-                            <Button onClick={handlePrint} variant="outline">
+                            <Button onClick={handlePrint} variant="outline" className="cursor-pointer">
+                                <PrinterCheckIcon />
                                 Print Invoice
                             </Button>
-                            <Button onClick={handleDownloadPdf}>Download PDF</Button>
+                            <Button onClick={handleDownloadPdf} className="cursor-pointer">
+                                <FileDown />
+                                Download PDF
+                            </Button>
                         </div>
                     </div>
 
@@ -95,14 +101,14 @@ export default function Invoice() {
                     <Card className="w-full">
                         <CardHeader className="border-b text-center">
                             <CardTitle className="text-3xl font-bold text-primary">Jolshiri Restaurant</CardTitle>
-                            <p className="text-gray-600">
+                            <p className="text-gray-600 mb-6">
                                 123 Restaurant Street, Food City, FC 12345
                                 <br />
                                 Phone: (555) 123-4567 | Email: info@jolshiri.com
                             </p>
                         </CardHeader>
 
-                        <CardContent className="p-8">
+                        <CardContent className="p-6">
                             {/* Invoice Header */}
                             <div className="mb-8 grid gap-4 md:grid-cols-2">
                                 <div>
