@@ -13,15 +13,12 @@ use App\Http\Controllers\OrderItemController;
 use App\Http\Controllers\CustomerDashboardController;
 
 Route::get('/', function () {
-    return Inertia::render('welcome', [
+    return Inertia::render('qrView', [
         'foods' => Food::all(),
         'tables' => Table::all(),
         'orders' => Order::all(),
     ]);
-})->name('home');
-
-// Public API endpoint for placing orders (no auth required)
-// Route::post('/api/orders', [OrderController::class, 'store'])->name('api.orders.store');
+})->name('qrView');
 
 // Public route for placing orders via Inertia (no auth required)
 Route::post('/place-order', [OrderController::class, 'store'])->name('orders.store.public');

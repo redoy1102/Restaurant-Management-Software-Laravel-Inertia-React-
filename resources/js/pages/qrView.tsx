@@ -1,6 +1,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 // import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { type SharedData } from '@/types';
@@ -29,6 +30,7 @@ interface CartItem {
 interface Order {
     id: number;
     table_id: number;
+    customer_phone: string;
     status: 'pending' | 'preparing' | 'ready' | 'served' | 'cancelled' | 'completed';
     created_at: string;
     updated_at: string;
@@ -68,6 +70,7 @@ export default function Welcome() {
 
     const { data, setData, processing, reset, errors } = useForm({
         table_id: '',
+        customer_phone: '',
         items: [] as Array<{ food_id: number; quantity: number }>,
     });
 
@@ -131,9 +134,9 @@ export default function Welcome() {
                                 {foods.map((food) => (
                                     <Card key={food.id} className="p-4">
                                         <div className="flex items-center justify-between">
-                                            <div className='flex gap-4 items-center'>
+                                            <div className="flex items-center gap-4">
                                                 <Avatar>
-                                                    <AvatarImage src={`/storage/${food.image}`} alt="Food" className='w-12 h-12 rounded-md' />
+                                                    <AvatarImage src={`/storage/${food.image}`} alt="Food" className="h-12 w-12 rounded-md" />
                                                     <AvatarFallback>{food.name.charAt(0)}</AvatarFallback>
                                                 </Avatar>
                                                 <div>
@@ -142,7 +145,7 @@ export default function Welcome() {
                                                     <p className="text-lg font-bold">${food.price}</p>
                                                 </div>
                                             </div>
-                                            <Button onClick={() => addToCart(food)} size="sm" className='cursor-pointer'>
+                                            <Button onClick={() => addToCart(food)} size="sm" className="cursor-pointer">
                                                 Add
                                             </Button>
                                         </div>
@@ -184,6 +187,19 @@ export default function Welcome() {
                                             </Select>
                                             {errors.table_id && <span className="text-sm text-red-500">{errors.table_id}</span>}
                                         </div>
+                                        <div>
+                                            <label htmlFor="customer_phone" className="mb-1 block font-medium">
+                                                Customer Phone
+                                            </label>
+                                            <Input
+                                                id="customer_phone"
+                                                name="customer_phone"
+                                                value={data.customer_phone}
+                                                onChange={(e) => setData('customer_phone', e.target.value)}
+                                                placeholder="Enter your phone number"
+                                            />
+                                            {errors.customer_phone && <span className="text-sm text-red-500">{errors.customer_phone}</span>}
+                                        </div>
                                     </div>
                                 </Card>
 
@@ -202,7 +218,11 @@ export default function Welcome() {
                                                             ${item.food.price} x {item.quantity}
                                                         </span>
                                                     </div>
-                                                    <Button onClick={() => removeFromCart(item.food.id)} size="sm" className="cursor-pointer border-1 border-red-500 text-red-500 bg-white hover:bg-red-500 hover:text-white">
+                                                    <Button
+                                                        onClick={() => removeFromCart(item.food.id)}
+                                                        size="sm"
+                                                        className="cursor-pointer border-1 border-red-500 bg-white text-red-500 hover:bg-red-500 hover:text-white"
+                                                    >
                                                         Remove
                                                     </Button>
                                                 </div>
@@ -217,7 +237,12 @@ export default function Welcome() {
                                 </Card>
 
                                 {/* Place Order Button */}
-                                <Button type="submit" disabled={cart.length === 0 || !data.table_id || processing} className="w-full cursor-pointer" size="lg">
+                                <Button
+                                    type="submit"
+                                    disabled={cart.length === 0 || !data.table_id || processing}
+                                    className="w-full cursor-pointer"
+                                    size="lg"
+                                >
                                     {processing ? 'Placing Order...' : `Place Order - $${getTotal().toFixed(2)}`}
                                 </Button>
                             </form>

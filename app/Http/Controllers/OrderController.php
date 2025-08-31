@@ -30,7 +30,7 @@ class OrderController extends Controller
         $validated = $request->validate([
             'table_id' => 'required|exists:tables,id',
             'customer_name' => 'nullable|string|max:255',
-            'customer_phone' => 'nullable|string|max:20',
+            'customer_phone' => 'string|max:20',
             'notes' => 'nullable|string',
             'items' => 'required|array|min:1',
             'items.*.food_id' => 'required|exists:foods,id',

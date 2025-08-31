@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('table_id')->constrained('tables');
             $table->string('customer_name')->nullable();
-            $table->string('customer_phone')->nullable();
+            $table->string('customer_phone');
             $table->enum('status', ['pending', 'preparing', 'ready', 'served', 'cancelled', 'completed'])->default('pending');
             $table->foreignId('chef_id')->nullable()->constrained('users');
             $table->integer('preparation_time')->nullable();
