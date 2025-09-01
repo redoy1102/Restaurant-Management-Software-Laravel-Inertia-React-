@@ -28,7 +28,7 @@ export default function Tables({ table }: { table: Table }) {
         put(`/tables/${table.id}`, {
             onSuccess: () => {
                 reset();
-                router.visit('/tables');
+                router.reload({ only: ['tables'] });
             },
         });
     };

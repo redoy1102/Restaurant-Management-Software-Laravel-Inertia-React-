@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\OrderPlaced;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Food;
@@ -83,6 +84,23 @@ class OrderController extends Controller
             }
 
             DB::commit();
+
+            // Broadcast the OrderPlaced event for real-time updates
+            try {
+                Log::info('OrderController: About to fire OrderPlaced event for order ' . $order->id);
+                $orderWithRelations = $order->load(['table', 'orderItems.food']);
+                Log::info('OrderController: Order loaded with relations', ['order' => $orderWithRelations->toArray()]);
+
+                $event = new OrderPlaced($orderWithRelations);
+                event($event);
+
+                Log::info('OrderController: OrderPlaced event fired successfully');
+                Log::info('OrderController: Event should broadcast on channel: orders');
+            } catch (\Exception $e) {
+                Log::error('Broadcasting failed but continuing: ' . $e->getMessage());
+                Log::error('Broadcasting error stack trace: ' . $e->getTraceAsString());
+                // Don't fail the order creation if broadcasting fails
+            }
 
             // Check if this is an Inertia request or API request
             if ($request->header('X-Inertia')) {

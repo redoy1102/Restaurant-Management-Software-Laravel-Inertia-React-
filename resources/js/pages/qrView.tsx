@@ -96,6 +96,7 @@ export default function Welcome() {
         // Create the order data with current cart
         const formData = {
             table_id: data.table_id,
+            customer_phone: data.customer_phone,
             items: cart.map((item) => ({
                 food_id: item.food.id,
                 quantity: item.quantity,
@@ -108,11 +109,16 @@ export default function Welcome() {
                 toast.success('Order placed successfully!');
                 setCart([]);
                 reset();
+                // Reload orders to update table availability
+                router.reload({ only: ['orders'] });
             },
             onError: (errors: Record<string, string>) => {
                 console.log('Order submission errors:', errors);
                 const errorMessage = Object.values(errors).join(', ') || 'Failed to place order';
                 toast.error(`Error: ${errorMessage}`);
+            },
+            onFinish: () => {
+                console.log('QR View: Order submission completed');
             },
         });
     };

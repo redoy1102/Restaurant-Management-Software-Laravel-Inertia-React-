@@ -81,7 +81,13 @@ export default function FoodsIndex({ foods }: FoodsIndexProps) {
                                                 className="flex cursor-pointer items-center gap-1 border-1 border-red-500 text-red-500 hover:bg-red-500 hover:text-white"
                                                 onClick={() => {
                                                     if (confirm('Are you sure you want to delete this food item?')) {
-                                                        router.delete(`/foods/${food.id}`);
+                                                        router.delete(`/foods/${food.id}`, {
+                                                            onSuccess: () => {
+                                                                router.reload({
+                                                                    only: ['foods'],
+                                                                });
+                                                            },
+                                                        });
                                                     }
                                                 }}
                                             >

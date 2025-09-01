@@ -44,11 +44,7 @@ export default function Foods({ food }: { food: Food }) {
         }
         router.post(`/foods/${food.id}`, formData, {
             onSuccess: () => {
-                router.visit('/foods', {
-                    method: 'get',
-                    preserveState: false,
-                    preserveScroll: false,
-                });
+                router.reload({ only: ['foods'] });
             },
         });
     };

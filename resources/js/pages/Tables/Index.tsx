@@ -52,17 +52,23 @@ export default function Tables({ tables }: TablesProps) {
                                             onClick={() => router.visit(`/tables/${table.id}/edit`)}
                                             size="sm"
                                             variant="outline"
-                                            className="flex items-center gap-1 cursor-pointer"
+                                            className="flex cursor-pointer items-center gap-1"
                                         >
                                             <Edit className="h-4 w-4" /> Edit
                                         </Button>
                                         <Button
                                             size="sm"
                                             variant="outline"
-                                            className="flex items-center gap-1 border-1 border-red-500 text-red-500 hover:bg-red-500 hover:text-white cursor-pointer"
+                                            className="flex cursor-pointer items-center gap-1 border-1 border-red-500 text-red-500 hover:bg-red-500 hover:text-white"
                                             onClick={() => {
                                                 if (confirm('Are you sure you want to delete this table?')) {
-                                                    router.delete(`/tables/${table.id}`);
+                                                    router.delete(`/tables/${table.id}`, {
+                                                        onSuccess: () => {
+                                                            router.reload({
+                                                                only: ['tables'],
+                                                            });
+                                                        },
+                                                    });
                                                 }
                                             }}
                                         >

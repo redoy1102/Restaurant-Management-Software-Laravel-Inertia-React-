@@ -4,6 +4,7 @@ use App\Models\Food;
 use Inertia\Inertia;
 use App\Models\Order;
 use App\Models\Table;
+use App\Events\OrderPlaced;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\FoodController;
 use App\Http\Controllers\OrderController;
@@ -18,7 +19,7 @@ Route::get('/', function () {
         'tables' => Table::all(),
         'orders' => Order::all(),
     ]);
-})->name('qrView');
+})->name('home');
 
 // Public route for placing orders via Inertia (no auth required)
 Route::post('/place-order', [OrderController::class, 'store'])->name('orders.store.public');
@@ -50,4 +51,26 @@ Route::middleware(['auth', 'verified'])->group(function () {
 });
 
 require __DIR__ . '/settings.php';
-require __DIR__ . '/auth.php';
+require __DIR__.'/auth.php';
+
+// Test broadcasting route (remove in production)
+Route::get('/test-broadcast', function () {
+    // Get the latest order to test broadcasting
+    $order = Order::with(['table', 'orderItems.food'])->latest()->first();
+
+    if ($order) {
+        event(new OrderPlaced($order));
+        return response()->json([
+            'success' => true,
+            'message' => 'OrderPlaced event broadcasted for order #' . $order->id,
+            'order_id' => $order->id
+        ]);
+    }
+
+    return response()->json([
+        'success' => false,
+        'message' => 'No orders found to test with'
+    ]);
+});
+
+// ...existing code...

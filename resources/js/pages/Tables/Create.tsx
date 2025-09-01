@@ -14,19 +14,19 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function Tables() {
-    const {data, setData, post, processing, reset, errors} = useForm({
+    const { data, setData, post, processing, reset, errors } = useForm({
         name: 'Table-',
-    })
+    });
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         post('/tables', {
             onSuccess: () => {
                 reset();
-                router.visit('/tables');
-            }
-        })
-    }
+                router.reload({ only: ['tables'] });
+            },
+        });
+    };
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Tables" />
@@ -38,21 +38,21 @@ export default function Tables() {
                     btnIcon={<List className="h-4 w-4" />}
                     btnTitle="See Table"
                 />
-                <form method="POST" action="/tables" onSubmit={handleSubmit} className="space-y-4 max-w-md">
+                <form method="POST" action="/tables" onSubmit={handleSubmit} className="max-w-md space-y-4">
                     <div>
-                        <label htmlFor="name" className="block mb-1 font-medium">Table Name</label>
+                        <label htmlFor="name" className="mb-1 block font-medium">
+                            Table Name
+                        </label>
                         <Input
                             id="name"
                             name="name"
                             value={data.name}
-                            onChange={e => setData('name', e.target.value)}
+                            onChange={(e) => setData('name', e.target.value)}
                             placeholder="Enter table name"
                         />
-                        {errors.name && (
-                            <span className="text-red-500 text-sm">{errors.name}</span>
-                        )}
+                        {errors.name && <span className="text-sm text-red-500">{errors.name}</span>}
                     </div>
-                    <Button disabled={processing} className='cursor-pointer'>
+                    <Button disabled={processing} className="cursor-pointer">
                         Add Table
                     </Button>
                 </form>

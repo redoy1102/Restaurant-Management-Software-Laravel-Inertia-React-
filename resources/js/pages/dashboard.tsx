@@ -4,15 +4,37 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import AppLayout from '@/layouts/app-layout';
-import { dashboard } from '@/routes';
 import { type BreadcrumbItem, type SharedData } from '@/types';
 import { Head, router, usePage } from '@inertiajs/react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+
+// Extend Window interface to include Echo
+declare global {
+    interface Window {
+        Echo?: {
+            channel: (channelName: string) => EchoChannel;
+            leaveChannel: (channelName: string) => void;
+            connector?: {
+                pusher?: {
+                    connection: {
+                        state: string;
+                        bind: (event: string, callback: (data: unknown) => void) => void;
+                    };
+                };
+            };
+        };
+    }
+}
+
+interface EchoChannel {
+    listen: (event: string, callback: (data: unknown) => void) => void;
+    stopListening: (event: string) => void;
+}
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: '/dashboard',
-        href: dashboard().url,
+        href: '/dashboard',
     },
 ];
 
@@ -51,6 +73,153 @@ interface DashboardProps {
 }
 
 export default function Dashboard() {
+    const [isEchoConnected, setIsEchoConnected] = useState(false);
+    const [lastUpdate, setLastUpdate] = useState<string>('');
+
+    // Listen for OrderPlaced event and reload orders for real-time updates
+    useEffect(() => {
+        console.log('Dashboard: Setting up Echo listener');
+        console.log('Echo available:', !!window.Echo);
+        console.log('VITE_PUSHER_APP_KEY:', import.meta.env.VITE_PUSHER_APP_KEY);
+
+        let retryTimeout: NodeJS.Timeout;
+        let pollInterval: NodeJS.Timeout;
+        let channel: EchoChannel | null = null;
+
+        const updateTimestamp = () => {
+            setLastUpdate(new Date().toLocaleTimeString());
+        };
+
+        const startPolling = () => {
+            if (pollInterval) return; // Don't start multiple intervals
+
+            console.log('Dashboard: Starting polling backup mechanism (every 2 seconds)');
+            pollInterval = setInterval(() => {
+                console.log('Dashboard: Polling backup update...');
+                updateTimestamp();
+                router.reload({ only: ['orders'] });
+            }, 2000); // Poll every 2 seconds as backup
+        };
+
+        const setupEchoListener = () => {
+            console.log('Dashboard: Attempting to setup Echo listener...');
+            if (window.Echo) {
+                console.log('Dashboard: Echo is available, checking connector...');
+                try {
+                    // Check if Echo is connected
+                    if (window.Echo.connector?.pusher) {
+                        const pusher = window.Echo.connector.pusher;
+                        console.log('Dashboard: Pusher connector found, current state:', pusher.connection.state);
+
+                        // Handle connection events
+                        pusher.connection.bind('connected', () => {
+                            console.log('Dashboard: Pusher connected successfully!');
+                            setIsEchoConnected(true);
+
+                            // Keep polling as a backup even when Echo is working
+                            if (!pollInterval) {
+                                console.log('Dashboard: Starting polling as backup to Echo');
+                                startPolling();
+                            }
+
+                            // Set up the channel listener after connection is established
+                            if (window.Echo) {
+                                channel = window.Echo.channel('orders');
+                                console.log('Dashboard: Subscribed to orders channel successfully');
+
+                                channel.listen('OrderPlaced', (e: unknown) => {
+                                    console.log('Dashboard: *** OrderPlaced event received! ***', e);
+                                    updateTimestamp();
+                                    // Add a small delay to ensure the order is saved in the database
+                                    setTimeout(() => {
+                                        console.log('Dashboard: Reloading orders after Echo event');
+                                        router.reload({ only: ['orders'] });
+                                    }, 100);
+                                });
+                            }
+                        });
+
+                        pusher.connection.bind('disconnected', () => {
+                            console.log('Dashboard: Pusher disconnected, ensuring polling backup is active');
+                            setIsEchoConnected(false);
+                            // Ensure polling is running when disconnected
+                            if (!pollInterval) {
+                                startPolling();
+                            }
+                        });
+
+                        pusher.connection.bind('error', (error: unknown) => {
+                            console.error('Dashboard: Pusher connection error:', error);
+                            setIsEchoConnected(false);
+                            // Ensure polling is running on error
+                            if (!pollInterval) {
+                                startPolling();
+                            }
+                        });
+
+                        // If already connected, set up the listener immediately
+                        if (pusher.connection.state === 'connected') {
+                            console.log('Dashboard: Pusher is already connected, setting up listener now');
+                            setIsEchoConnected(true);
+                            channel = window.Echo.channel('orders');
+                            console.log('Dashboard: Subscribed to orders channel (already connected)');
+
+                            channel.listen('OrderPlaced', (e: unknown) => {
+                                console.log('Dashboard: *** OrderPlaced event received (already connected)! ***', e);
+                                updateTimestamp();
+                                setTimeout(() => {
+                                    console.log('Dashboard: Reloading orders after Echo event (already connected)');
+                                    router.reload({ only: ['orders'] });
+                                }, 100);
+                            });
+                        } else {
+                            console.log('Dashboard: Pusher not connected yet, state:', pusher.connection.state);
+                        }
+                    } else {
+                        console.log('Dashboard: No pusher connector found');
+                    }
+                } catch (error) {
+                    console.error('Dashboard: Error setting up Echo listener:', error);
+                    // Retry after 2 seconds
+                    retryTimeout = setTimeout(setupEchoListener, 2000);
+                }
+            } else {
+                console.log('Dashboard: Echo not available, retrying in 1 second...');
+                // Retry if Echo is not available
+                retryTimeout = setTimeout(setupEchoListener, 1000);
+            }
+        };
+
+        // Always start polling as a reliable fallback first
+        startPolling();
+        // Then try to setup Echo for potentially faster updates
+        setupEchoListener();
+
+        return () => {
+            if (retryTimeout) {
+                clearTimeout(retryTimeout);
+            }
+            if (pollInterval) {
+                clearInterval(pollInterval);
+            }
+            if (channel) {
+                console.log('Dashboard: Leaving orders channel');
+                try {
+                    channel.stopListening('OrderPlaced');
+                } catch (error) {
+                    console.error('Dashboard: Error stopping listener:', error);
+                }
+            }
+            if (window.Echo) {
+                try {
+                    window.Echo.leaveChannel('orders');
+                } catch (error) {
+                    console.error('Dashboard: Error leaving channel:', error);
+                }
+            }
+        };
+    }, []); // Remove isEchoConnected dependency to prevent re-runs
+
     const { orders } = usePage<SharedData & DashboardProps>().props;
     const [editingOrder, setEditingOrder] = useState<number | null>(null);
     const [preparationTime, setPreparationTime] = useState<string>('');
@@ -114,7 +283,9 @@ export default function Dashboard() {
             <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
                 <div className="flex items-center justify-between">
                     <h1 className="text-2xl font-bold">Chef Dashboard</h1>
-                    <div className="text-sm text-gray-600">Total Orders: {orders.length}</div>
+                    <div className="flex items-center gap-4">
+                        <div className="text-sm text-gray-600">Total Orders: {orders.length}</div>
+                    </div>
                 </div>
 
                 <div className="grid gap-10">
@@ -152,7 +323,6 @@ export default function Dashboard() {
                                                     </div>
                                                 ))}
                                                 <div className="border-t pt-2 font-medium">Total: ${order.total_amount}</div>
-
                                             </div>
                                         </div>
 
